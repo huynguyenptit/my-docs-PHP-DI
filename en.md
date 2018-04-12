@@ -1,169 +1,224 @@
-# Understanding Dependency Injection
+#10 Tips to Push Your Git Skills to the Next Level
 
-*Dependency injection* and *dependency injection containers* are different things:
+Recently we published a couple of tutorials to get you familiar with Git basics and using Git in a team environment. The commands that we discussed were about enough to help a developer survive in the Git world. In this post, we will try to explore how to manage your time effectively and make full use of the features that Git provides.
 
-- **dependency injection is a method** for writing better code
-- **a container is a tool** to help injecting dependencies
+Note: Some commands in this article include part of the command in square brackets (e.g. git add -p [file_name]). In those examples, you would insert the necessary number, identifier, etc. without the square brackets.
 
-You don't *need* a container to do dependency injection. However a container can help you.
+##1. Git Auto Completion
 
-PHP-DI is about this: making dependency injection more practical.
+If you run Git commands through the command line, it’s a tiresome task to type in the commands manually every single time. To help with this, you can enable auto completion of Git commands within a few minutes.
 
+To get the script, run the following in a Unix system:
 
-## The theory
-
-### Classic PHP code
-
-Here is how a code **not** using DI will roughly work:
-
-* Application needs Foo (e.g. a controller), so:
-* Application creates Foo
-* Application calls Foo
-    * Foo needs Bar (e.g. a service), so:
-    * Foo creates Bar
-    * Foo calls Bar
-        * Bar needs Bim (a service, a repository, …), so:
-        * Bar creates Bim
-        * Bar does something
-
-### Using dependency injection
-
-Here is how a code using DI will roughly work:
-
-* Application needs Foo, which needs Bar, which needs Bim, so:
-* Application creates Bim
-* Application creates Bar and gives it Bim
-* Application creates Foo and gives it Bar
-* Application calls Foo
-    * Foo calls Bar
-        * Bar does something
-
-This is the pattern of **Inversion of Control**. The control of the dependencies is **inverted** from one being called to the one calling.
-
-The main advantage: the one at the top of the caller chain is always **you**. You can control all dependencies and have complete control over how your application works. 
-You can replace a dependency by another (one you made for example).
-
-For example what if Library X uses Logger Y and you want to make it use your logger Z? With dependency injection, you don't have to change the code of Library X.
-
-### Using a container
-
-Now how does a code using PHP-DI works:
-
-* Application needs Foo so:
-* Application gets Foo from the Container, so:
-    * Container creates Bim
-    * Container creates Bar and gives it Bim
-    * Container creates Foo and gives it Bar
-* Application calls Foo
-    * Foo calls Bar
-        * Bar does something
-
-In short, **the container takes away all the work of creating and injecting dependencies**.
-
-
-## Understanding with an example
-
-This is a real life example comparing a classic implementation (using `new` or singletons) VS using dependency injection.
-
-### Without dependency injection
-
-Say you have:
-
-```php
-class GoogleMaps
-{
-    public function getCoordinatesFromAddress($address) {
-        // calls Google Maps webservice
-    }
-}
-class OpenStreetMap
-{
-    public function getCoordinatesFromAddress($address) {
-        // calls OpenStreetMap webservice
-    }
-}
+```
+cd ~
+curl https://raw.github.com/git/git/master/contrib/completion/git-completion.bash -o ~/.git-completion.bash
 ```
 
-The classic way of doing things is:
+Next, add the following lines to your ```~/.bash_profile``` file:
 
-```php
-class StoreService
-{
-    public function getStoreCoordinates($store) {
-        $geolocationService = new GoogleMaps();
-        // or $geolocationService = GoogleMaps::getInstance() if you use singletons
-
-        return $geolocationService->getCoordinatesFromAddress($store->getAddress());
-    }
-}
+```
+if [ -f ~/.git-completion.bash ]; then
+    . ~/.git-completion.bash
+fi
 ```
 
-Now we want to use the `OpenStreetMap` instead of `GoogleMaps`, how do we do?
-We have to change the code of `StoreService`, and all the other classes that use `GoogleMaps`.
+Although I have mentioned this earlier, I can not stress it enough: If you want to use the features of Git fully, you should definitely shift to the command line interface!
 
-**Without dependency injection, your classes are tightly coupled to their dependencies.**
+##2. Ignoring Files in Git
 
-### With dependency injection
+Are you tired of compiled files (like ```.pyc```) appearing in your Git repository? Or are you so fed up that you have added them to Git? Look no further, there is a way through which you can tell Git to ignore certain files and directories altogether. Simply create a file with the name ```.gitignore``` and list the files and directories that you don’t want Git to track. You can make exceptions using the exclamation mark(!).
 
-The `StoreService` now uses dependency injection:
+```
+*.pyc
+*.exe
+my_db_config/
 
-```php
-class StoreService {
-    private $geolocationService;
-
-    public function __construct(GeolocationService $geolocationService) {
-        $this->geolocationService = $geolocationService;
-    }
-
-    public function getStoreCoordinates($store) {
-        return $this->geolocationService->getCoordinatesFromAddress($store->getAddress());
-    }
-}
+!main.pyc
 ```
 
-And the services are defined using an interface:
+##3. Who Messed With My Code?
 
-```php
-interface GeolocationService {
-    public function getCoordinatesFromAddress($address);
-}
+It’s the natural instinct of human beings to blame others when something goes wrong. If your production server is broke, it’s very easy to find out the culprit — just do a ```git blame```. This command shows you the author of every line in a file, the commit that saw the last change in that line, and the timestamp of the commit.
 
-class GoogleMaps implements GeolocationService { ...
+```
+git blame [file_name]
 
-class OpenStreetMap implements GeolocationService { ...
 ```
 
-Now, it is for the user of the StoreService to decide which implementation to use. And it can be changed anytime, without
-having to rewrite the `StoreService`.
+![ahihi](https://dab1nmslvvntp.cloudfront.net/wp-content/uploads/2014/06/1402946443git-ninja-01.png)
 
-**The `StoreService` is no longer tightly coupled to its dependency.**
+And in the screenshot below, you can see how this command would look on a bigger repository:
 
-## With PHP-DI
+![ahihi](https://dab1nmslvvntp.cloudfront.net/wp-content/uploads/2014/06/1402946441git-ninja-02.png)
 
-You may see that dependency injection will leave with one drawback: you now have to handle injecting dependencies.
+##4. Review History of the Repository
 
-That's where a container, and specifically PHP-DI, can help you.
+We had a look at the use of ```git log``` in a previous tutorial, however, there are three options that you should know about.
 
-Instead of writing:
+* ```--oneline``` – Compresses the information shown beside each commit to a reduced commit hash and the commit message, all shown in a single line.
+* ```--graph``` – This option draws a text-based graphical representation of the history on the left hand side of the output. It’s of no use if you are viewing the history for a single branch.
+* ```--all``` – Shows the history of all branches.
 
-```php
-$geolocationService = new GoogleMaps();
-$storeService = new StoreService($geolocationService);
+Here’s what a combination of the options looks like:
+
+![ahihi](https://dab1nmslvvntp.cloudfront.net/wp-content/uploads/2014/06/1402946444git-ninja-03.png)
+
+##5. Never Lose Track of a Commit
+
+Let’s say you committed something you didn’t want to and ended up doing a hard reset to come back to your previous state. Later, you realize you lost some other information in the process and want to get it back, or at least view it. This is where ```git reflog``` can help.
+
+A simple ```git log``` shows you the latest commit, its parent, its parent’s parent, and so on. However, ```git reflog``` is a list of commits that the head was pointed to. Remember that it’s local to your system; it’s not a part of your repository and not included in pushes or merges.
+
+If I run ```git log```, I get the commits that are a part of my repository:
+
+![ahihi](https://dab1nmslvvntp.cloudfront.net/wp-content/uploads/2014/06/1402946446git-ninja-04.png)
+
+However, a ```git reflog``` shows a commit (```b1b0ee9 – HEAD@{4}```) that was lost when I did a hard reset:
+
+![ahihi](https://dab1nmslvvntp.cloudfront.net/wp-content/uploads/2014/06/1402946447git-ninja-05.png)
+
+##6. Staging Parts of a Changed File for a Commit
+
+It is generally a good practice to make feature-based commits, that is, each commit must represent a feature or a bug fix. Consider what would happen if you fixed two bugs, or added multiple features without committing the changes. In such a situation situation, you could put the changes in a single commit. But there is a better way: Stage the files individually and commit them separately.
+
+Let’s say you’ve made multiple changes to a single file and want them to appear in separate commits. In that case, we add files by prefixing ```-p``` to our add commands.
+
 ```
 
-You can write:
+git add -p [file_name]
 
-```php
-$storeService = $container->get('StoreService');
 ```
 
-and configure which GeolocationService PHP-DI should automatically inject in StoreService through configuration:
+Let’s try to demonstrate the same. I have added three new lines to ```file_name``` and I want only the first and third lines to appear in my commit. Let’s see what a ```git diff``` shows us.
 
-```php
-$container->set('GeolocationService', \DI\create('GoogleMaps'));
+![ahihi](https://dab1nmslvvntp.cloudfront.net/wp-content/uploads/2014/06/1402946449git-ninja-06.png)
+
+And let’s see what happes when we prefix a ```-p``` to our ```add``` command.
+
+![ahihi](https://dab1nmslvvntp.cloudfront.net/wp-content/uploads/2014/06/1402946450git-ninja-07.png)
+
+It seems that Git assumed that all the changes were a part of the same idea, thereby grouping it into a single hunk. You have the following options:
+
+* Enter y to stage that hunk
+* Enter n to not stage that hunk
+* Enter e to manually edit the hunk
+* Enter d to exit or go to the next file.
+* Enter s to split the hunk.
+
+In our case, we definitely want to split it into smaller parts to selectively add some and ignore the rest.
+
+![ahihi](https://dab1nmslvvntp.cloudfront.net/wp-content/uploads/2014/06/1402946452git-ninja-08.png)
+
+As you can see, we have added the first and third lines and ignored the second. You can then view the status of the repository and make a commit.
+
+![ahihi](https://dab1nmslvvntp.cloudfront.net/wp-content/uploads/2014/06/1402946454git-ninja-09.png)
+
+##7. Squash Multiple Commits
+
+When you submit your code for review and create a pull request (which happens often in open source projects), you might be asked to make a change to your code before it’s accepted. You make the change, only to be asked to change it yet again in the next review. Before you know it, you have a few extra commits. Ideally, you could squash them into one using the ```rebase``` command.
+
 ```
 
-If you change your mind, there's just one line of configuration to change now.
+git rebase -i HEAD~[number_of_commits]
 
-Interested? Go ahead and read the [Getting started](getting-started.md) guide!
+```
+
+If you want to squash the last two commits, the command that you run is the following.
+
+```
+
+git rebase -i HEAD~2
+
+```
+
+On running this command, you are taken to an interactive interface listing the commits and asking you which ones to squash. Ideally, you ```pick``` the latest commit and ```squash``` the old ones.
+
+![ahihi](https://dab1nmslvvntp.cloudfront.net/wp-content/uploads/2014/06/1402946455git-ninja-10.png)
+
+You are then asked to provide a commit message to the new commit. This process essentially re-writes your commit history.
+
+![ahihi](https://dab1nmslvvntp.cloudfront.net/wp-content/uploads/2014/06/1402946457git-ninja-11.png)
+
+##8. Stash Uncommitted Changes
+
+Let’s say you are working on a certain bug or a feature, and you are suddenly asked to demonstrate your work. Your current work is not complete enough to be committed, and you can’t give a demonstration at this stage (without reverting the changes). In such a situation, ```git stash``` comes to the rescue. Stash essentially takes all your changes and stores them for further use. To stash your changes, you simply run the following-
+
+```
+
+git stash
+
+```
+
+To check the list of stashes, you can run the following:
+
+```
+
+git stash list
+
+```
+
+![ahihi](https://dab1nmslvvntp.cloudfront.net/wp-content/uploads/2014/06/1402946458git-ninja-12.png)
+
+If you want to un-stash and recover the uncommitted changes, you apply the stash:
+
+```
+
+git stash apply
+
+```
+
+In the last screenshot, you can see that each stash has an indentifier, a unique number (although we have only one stash in this case). In case you want to apply only selective stashes, you add the specific identifier to the ```apply``` command:
+
+```
+
+git stash apply stash@{2}
+
+```
+
+![ahihi](https://dab1nmslvvntp.cloudfront.net/wp-content/uploads/2014/06/1402946461git-ninja-13.png)
+
+
+##9. Check for Lost Commits
+
+Although ```reflog``` is one way of checking for lost commits, it’s not feasible in large repositories. That is when the ```fsck``` (file system check) command comes into play.
+
+```
+
+git fsck --lost-found
+
+```
+
+![ahihi](https://dab1nmslvvntp.cloudfront.net/wp-content/uploads/2014/06/1402946463git-ninja-14.png)
+
+Here you can see a lost commit. You can check the changes in the commit by running ```git show [commit_hash]``` or recover it by running ```git merge [commit_hash]```.
+
+```git fsck``` has an advantage over ```reflog```. Let’s say you deleted a remote branch and then cloned the repository. With ```fsck``` you can search for and recover the deleted remote branch.
+
+
+##10. Cherry Pick
+
+I have saved the most elegant Git command for the last. The ```cherry-pick``` command is by far my favorite Git command, because of its literal meaning as well as its utility!
+
+In the simplest of terms, ```cherry-pick``` is picking a single commit from a different branch and merging it with your current one. If you are working in a parallel fashion on two or more branches, you might notice a bug that is present in all branches. If you solve it in one, you can cherry pick the commit into the other branches, without messing with other files or commits.
+
+Let’s consider a scenario where we can apply this. I have two branches and I want to ```cherry-pick``` the commit ```b20fd14: Cleaned junk``` into another one.
+
+![ahihi](https://dab1nmslvvntp.cloudfront.net/wp-content/uploads/2014/06/1402946465git-ninja-15.png)
+
+I switch to the branch into which I want to ```cherry-pick``` the commit, and run the following:
+
+```
+
+git cherry-pick [commit_hash]
+
+```
+
+![ahihi](https://dab1nmslvvntp.cloudfront.net/wp-content/uploads/2014/06/1402946467git-ninja-16.png)
+
+Although we had a clean ```cherry-pick``` this time, you should know that this command can often lead to conflicts, so use it with care.
+
+##Conclusion
+
+With this, we come to the end of our list of tips that I think can help you take your Git skills to a new level. Git is the best out there and it can accomplish anything you can imagine. Therefore, always try to challenge yourself with Git. Chances are, you will end up learning something new!
 
